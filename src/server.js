@@ -9,7 +9,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 
 // Import routers
 import sampleRouter from "./domains/sample/routes.js";
-import sparkRouter from "./domains/spark/spark.router.js";
+import sparkRouter from "./domains/spark/routes.js";
 
 const app = express();
 
