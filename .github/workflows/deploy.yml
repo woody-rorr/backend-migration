@@ -63,15 +63,9 @@ jobs:
             --force-new-deployment \
             --region $AWS_REGION > /dev/null
 
-      - name: Wait for stable
-        run: |
-          aws ecs wait services-stable \
-            --cluster $CLUSTER \
-            --services $SERVICE \
-            --region $AWS_REGION
-
       - name: Done
         run: |
-          echo "✅ Deployed: $ECR_REGISTRY/$ECR_REPO:${{ github.sha }}"
+          echo "✅ Deployment triggered: $ECR_REGISTRY/$ECR_REPO:${{ github.sha }}"
           echo "Health: http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com:5012/health"
           echo "API Docs: http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com:5012/api-docs"
+          echo "ℹ️  새 task healthy 등록 후 약 30s 내 트래픽 전환. 옛 task draining은 백그라운드 진행."
