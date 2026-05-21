@@ -8,25 +8,7 @@ import { pool } from "./config/db.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 // Import routers
-import authRouter from "./domains/auth/routes.js";
-import commonRouter from "./domains/common/routes.js";
-import donationRouter from "./domains/donation/routes.js";
-import eventRouter from "./domains/event/routes.js";
-import extensionRouter from "./domains/extension/routes.js";
-import followRouter from "./domains/follow/routes.js";
-import mainfeedRouter from "./domains/mainfeed/routes.js";
-import msgboxesRouter from "./domains/msgboxes/routes.js";
-import paymentsRouter from "./domains/payments/routes.js";
-import quizRouter from "./domains/quiz/routes.js";
-import rankingRouter from "./domains/ranking/routes.js";
 import sampleRouter from "./domains/sample/routes.js";
-import schedulesRouter from "./domains/schedules/routes.js";
-import searchRouter from "./domains/search/routes.js";
-import sparkRouter from "./domains/spark/routes.js";
-import teamsRouter from "./domains/teams/routes.js";
-import uploaderRouter from "./domains/uploader/routes.js";
-import usersRouter from "./domains/users/routes.js";
-import webHooksRouter from "./domains/webHooks/routes.js";
 
 const app = express();
 
@@ -73,25 +55,7 @@ app.get("/db-check", async (_, res, next) => {
 });
 
 // Mount routers
-app.use("/auth", authRouter);
-app.use("/common", commonRouter);
-app.use("/donation", donationRouter);
-app.use("/event", eventRouter);
-app.use("/extension", extensionRouter);
-app.use("/follow", followRouter);
-app.use("/mainfeed", mainfeedRouter);
-app.use("/msgboxes", msgboxesRouter);
-app.use("/payments", paymentsRouter);
-app.use("/quiz", quizRouter);
-app.use("/ranking", rankingRouter);
 app.use("/sample", sampleRouter);
-app.use("/schedules", schedulesRouter);
-app.use("/search", searchRouter);
-app.use("/spark", sparkRouter);
-app.use("/teams", teamsRouter);
-app.use("/uploader", uploaderRouter);
-app.use("/users", usersRouter);
-app.use("/webHooks", webHooksRouter);
 
 app.use(errorHandler);
 
