@@ -1,13 +1,16 @@
-import pkg from "pg";
+import mysql from "mysql2/promise";
 import { env } from "./env.js";
 
-const { Pool } = pkg;
-
-export const pool = env.DATABASE_URL
-  ? new Pool({
-      connectionString: env.DATABASE_URL,
-      max: 10,
-      idleTimeoutMillis: 30000,
+export const pool = (env.DB_HOST && env.DB_USER)
+  ? mysql.createPool({
+      host: env.DB_HOST,
+      port: Number(env.DB_PORT || 3306),
+      user: env.DB_USER,
+      password: env.DB_PASS,
+      database: env.DB_NAME,
+      waitForConnections: true,
+      connectionLimit: 10,
+      enableKeepAlive: true,
     })
   : null;
 
