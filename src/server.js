@@ -9,6 +9,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 
 // Import routers
 import sampleRouter from "./domains/sample/routes.js";
+import sparkRouter from "./domains/spark/spark.router.js";
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.get("/db-check", async (_, res, next) => {
 
 // Mount routers
 app.use("/sample", sampleRouter);
+app.use("/spark", sparkRouter);
 
 app.use(errorHandler);
 
