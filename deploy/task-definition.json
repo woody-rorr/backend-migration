@@ -1,30 +1,56 @@
 {
-  "family": "backend-migration-api-task",
+  "family": "backend-migration-api-service",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "512",
   "memory": "1024",
-  "executionRoleArn": "arn:aws:iam::239460481239:role/backend-migration-api-execution",
-  "taskRoleArn": "arn:aws:iam::239460481239:role/backend-migration-api-task",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "executionRoleArn": "arn:aws:iam::239460481239:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::239460481239:role/backend-migration-api-service-task-role",
   "containerDefinitions": [
     {
-      "name": "api",
-      "image": "239460481239.dkr.ecr.us-east-1.amazonaws.com/backend-migration-api:latest",
+      "name": "backend-migration-api-service",
+      "image": "239460481239.dkr.ecr.us-east-1.amazonaws.com/backend-migration-api-service:latest",
       "essential": true,
-      "portMappings": [{ "containerPort": 5012, "protocol": "tcp" }],
+      "portMappings": [
+        {
+          "containerPort": 5012,
+          "hostPort": 5012,
+          "protocol": "tcp",
+          "name": "http",
+          "appProtocol": "http"
+        }
+      ],
       "environment": [
+        { "name": "NODE_ENV", "value": "production" },
         { "name": "PORT", "value": "5012" },
+        { "name": "SERVICE_NAME", "value": "backend-migration-api-service" },
         { "name": "AWS_REGION", "value": "us-east-1" },
-        { "name": "NODE_ENV", "value": "production" }
+        { "name": "SSM_PARAMETER_PREFIX", "value": "/backend-migration-api-service" }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/backend-migration-api",
+          "awslogs-group": "/ecs/backend-migration-api-service",
           "awslogs-region": "us-east-1",
-          "awslogs-stream-prefix": "ecs"
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
         }
-      }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -fsS http://localhost:5012/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 30
+      },
+      "stopTimeout": 30
     }
   ]
 }
