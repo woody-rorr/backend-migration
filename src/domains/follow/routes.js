@@ -9,44 +9,10 @@ import {
 
 const router = express.Router();
 
-router.get('/my', async (req, res, next) => {
-  try {
-    await getMyFollowsHandler(req, res);
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.get('/list', async (req, res, next) => {
-  try {
-    await getListWithFollowHandler(req, res);
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.get('/list/teams', async (req, res, next) => {
-  try {
-    await getTeamsWithFollowHandler(req, res);
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.put('/', async (req, res, next) => {
-  try {
-    await putFollowsBatchHandler(req, res);
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.delete('/:followType/:targetId', async (req, res, next) => {
-  try {
-    await deleteFollowHandler(req, res);
-  } catch (err) {
-    next(err);
-  }
-});
+router.get('/my', getMyFollowsHandler);
+router.get('/list', getListWithFollowHandler);
+router.get('/list/teams', getTeamsWithFollowHandler);
+router.put('/', putFollowsBatchHandler);
+router.delete('/:followType/:targetId', deleteFollowHandler);
 
 export default router;
