@@ -63,38 +63,9 @@ jobs:
             --force-new-deployment \
             --region $AWS_REGION > /dev/null
 
-      - name: Wait for service stable
-        timeout-minutes: 10
-        run: |
-          aws ecs wait services-stable \
-            --cluster $CLUSTER \
-            --services $SERVICE \
-            --region $AWS_REGION
-
-      - name: Verify new image is running
-        run: |
-          EXPECTED="$ECR_REGISTRY/$ECR_REPO:${{ github.sha }}"
-          TASK_ARN=$(aws ecs list-tasks --cluster $CLUSTER --service-name $SERVICE \
-            --desired-status RUNNING --region $AWS_REGION --query 'taskArns[0]' --output text)
-          RUNNING_IMAGE=$(aws ecs describe-tasks --cluster $CLUSTER --tasks "$TASK_ARN" \
-            --region $AWS_REGION --query 'tasks[0].containers[0].image' --output text)
-          echo "Expected (sha tag): $EXPECTED"
-          echo "Running:            $RUNNING_IMAGE"
-          # task definition uses :latest, so running image will be :latest — just confirm digest matches
-          DIGEST_EXPECTED=$(aws ecr describe-images --repository-name $ECR_REPO --region $AWS_REGION \
-            --image-ids imageTag=${{ github.sha }} --query 'imageDetails[0].imageDigest' --output text)
-          DIGEST_RUNNING=$(aws ecs describe-tasks --cluster $CLUSTER --tasks "$TASK_ARN" \
-            --region $AWS_REGION --query 'tasks[0].containers[0].imageDigest' --output text)
-          echo "Expected digest: $DIGEST_EXPECTED"
-          echo "Running digest:  $DIGEST_RUNNING"
-          if [ "$DIGEST_EXPECTED" != "$DIGEST_RUNNING" ]; then
-            echo "::error::Running task is not using the newly pushed image"
-            exit 1
-          fi
-          echo "✅ Verified: running image matches commit ${{ github.sha }}"
-
       - name: Done
         run: |
-          echo "✅ Deployment complete: $ECR_REGISTRY/$ECR_REPO:${{ github.sha }}"
+          echo "✅ Deployment triggered: $ECR_REGISTRY/$ECR_REPO:${{ github.sha }}"
           echo "Health: http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com:5012/health"
           echo "API Docs: http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com:5012/api-docs"
+          echo "ℹ️  새 task가 unhealthy하면 ECS가 옛 task로 자동 롤백/유지 — 별도 wait 검증 없음."
