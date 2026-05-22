@@ -73,7 +73,7 @@ done < "${TMP_PARAMS}"
 log "Loaded ${INJECTED} parameter(s) from SSM"
 
 if [ "$#" -eq 0 ]; then
-  set -- node server.js
+  set -- node src/server.js
 fi
 
 log "Executing: $*"
