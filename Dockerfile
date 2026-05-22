@@ -1,46 +1,49 @@
 # syntax=docker/dockerfile:1.6
-FROM --platform=linux/amd64 node:20-bookworm-slim AS builder
+FROM --platform=linux/amd64 node:20-bookworm-slim AS deps
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      ca-certificates \
+      curl \
+      unzip \
+      tini \
+ && rm -rf /var/lib/apt/lists/*
 
-COPY . .
-RUN npm run build || echo "no build step"
+COPY package*.json ./
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
 
 FROM --platform=linux/amd64 node:20-bookworm-slim AS runtime
 
 ENV NODE_ENV=production \
-    NPM_CONFIG_UPDATE_NOTIFIER=false \
-    PORT=5012
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        ca-certificates \
-        curl \
-        unzip \
-        jq \
-        tini \
-    && curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip \
-    && unzip -q /tmp/awscliv2.zip -d /tmp \
-    && /tmp/aws/install \
-    && rm -rf /tmp/aws /tmp/awscliv2.zip \
-    && apt-get purge -y --auto-remove unzip \
-    && rm -rf /var/lib/apt/lists/*
+    PORT=5012 \
+    AWS_DEFAULT_REGION=ap-northeast-2 \
+    SSM_PREFIX=/backend-migration-api-service
 
 WORKDIR /app
 
-COPY --from=builder /app /app
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      ca-certificates \
+      curl \
+      unzip \
+      jq \
+      tini \
+ && curl -sSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip \
+ && unzip -q /tmp/awscliv2.zip -d /tmp \
+ && /tmp/aws/install \
+ && rm -rf /tmp/aws /tmp/awscliv2.zip \
+ && apt-get purge -y --auto-remove unzip \
+ && rm -rf /var/lib/apt/lists/*
 
-RUN chmod +x /app/deploy/entrypoint.sh \
-    && groupadd --system app \
-    && useradd --system --gid app --home /app --shell /usr/sbin/nologin app \
-    && chown -R app:app /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-USER app
+COPY deploy/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 5012
 
-ENTRYPOINT ["/usr/bin/tini", "--", "/app/deploy/entrypoint.sh"]
-CMD ["node", "dist/index.js"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
+CMD ["node", "server.js"]

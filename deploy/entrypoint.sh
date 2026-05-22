@@ -1,75 +1,73 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SERVICE_NAME="${SERVICE_NAME:-backend-migration-api-service}"
-SSM_PREFIX="${SSM_PARAMETER_PREFIX:-/${SERVICE_NAME}}"
+SSM_PREFIX="${SSM_PREFIX:-/backend-migration-api-service}"
 AWS_REGION="${AWS_REGION:-${AWS_DEFAULT_REGION:-ap-northeast-2}}"
-export AWS_REGION AWS_DEFAULT_REGION="${AWS_REGION}"
 
 log() {
   printf '[entrypoint] %s\n' "$*" >&2
 }
 
-REQUIRED_KEYS=(
-  SECRET_NAME
-  AWS_REGION
-  DB_HOST
-  DB_PORT
-  DB_USER
-  DB_PASSWORD
-  DB_NAME
-)
+to_env_key() {
+  printf '%s' "$1" | awk -F/ '{print $NF}' | tr '[:lower:]-' '[:upper:]_'
+}
 
-log "loading SSM parameters from ${SSM_PREFIX}/* in ${AWS_REGION}"
+log "Loading SSM parameters from prefix '${SSM_PREFIX}' in region '${AWS_REGION}'"
+
+if ! command -v aws >/dev/null 2>&1; then
+  log "aws CLI not found in PATH; aborting"
+  exit 1
+fi
+
+TMP_PARAMS="$(mktemp)"
+trap 'rm -f "${TMP_PARAMS}"' EXIT
 
 NEXT_TOKEN=""
-PARAMS_JSON="[]"
 while : ; do
   if [ -n "${NEXT_TOKEN}" ]; then
-    PAGE=$(aws ssm get-parameters-by-path \
+    RESP="$(aws ssm get-parameters-by-path \
+      --region "${AWS_REGION}" \
       --path "${SSM_PREFIX}" \
       --recursive \
       --with-decryption \
-      --region "${AWS_REGION}" \
+      --max-items 10 \
       --starting-token "${NEXT_TOKEN}" \
-      --output json)
+      --output json)"
   else
-    PAGE=$(aws ssm get-parameters-by-path \
+    RESP="$(aws ssm get-parameters-by-path \
+      --region "${AWS_REGION}" \
       --path "${SSM_PREFIX}" \
       --recursive \
       --with-decryption \
-      --region "${AWS_REGION}" \
-      --output json)
+      --max-items 10 \
+      --output json)"
   fi
 
-  PARAMS_JSON=$(jq -s '.[0] + .[1]' <(printf '%s' "${PARAMS_JSON}") <(printf '%s' "${PAGE}" | jq '.Parameters'))
+  printf '%s' "${RESP}" | jq -r '.Parameters[] | "\(.Name)\t\(.Value)"' >> "${TMP_PARAMS}"
 
-  NEXT_TOKEN=$(printf '%s' "${PAGE}" | jq -r '.NextToken // empty')
+  NEXT_TOKEN="$(printf '%s' "${RESP}" | jq -r '.NextToken // empty')"
   if [ -z "${NEXT_TOKEN}" ]; then
     break
   fi
 done
 
-COUNT=$(printf '%s' "${PARAMS_JSON}" | jq 'length')
-log "fetched ${COUNT} parameter(s) from SSM"
-
-while IFS=$'\t' read -r KEY VALUE; do
-  [ -z "${KEY}" ] && continue
-  export "${KEY}=${VALUE}"
-  log "injected env: ${KEY}"
-done < <(printf '%s' "${PARAMS_JSON}" | jq -r --arg prefix "${SSM_PREFIX}/" '.[] | [(.Name | sub($prefix; "")), .Value] | @tsv')
-
-MISSING=()
-for KEY in "${REQUIRED_KEYS[@]}"; do
-  if [ -z "${!KEY:-}" ]; then
-    MISSING+=("${KEY}")
+INJECTED=0
+while IFS=$'\t' read -r NAME VALUE; do
+  [ -z "${NAME}" ] && continue
+  KEY="$(to_env_key "${NAME}")"
+  if [ -z "${KEY}" ]; then
+    continue
   fi
-done
+  export "${KEY}=${VALUE}"
+  INJECTED=$((INJECTED + 1))
+  log "Injected ${KEY} from ${NAME}"
+done < "${TMP_PARAMS}"
 
-if [ "${#MISSING[@]}" -gt 0 ]; then
-  log "missing required env: ${MISSING[*]}"
-  exit 1
+log "Loaded ${INJECTED} parameter(s) from SSM"
+
+if [ "$#" -eq 0 ]; then
+  set -- node server.js
 fi
 
-log "starting: $*"
+log "Executing: $*"
 exec "$@"
