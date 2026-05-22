@@ -1,7 +1,7 @@
 FROM node:20-bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    awscli ca-certificates curl && rm -rf /var/lib/apt/lists/*
+    awscli ca-certificates curl jq && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY package.json package-lock.json* ./
@@ -13,4 +13,4 @@ RUN chmod +x entrypoint.sh
 
 EXPOSE 5012
 ENTRYPOINT []
-CMD ["/bin/sh", "/app/entrypoint.sh"]
+CMD ["/app/entrypoint.sh"]
