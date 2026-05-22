@@ -23,6 +23,7 @@ TMP_PARAMS="$(mktemp)"
 trap 'rm -f "${TMP_PARAMS}"' EXIT
 
 NEXT_TOKEN=""
+SSM_OK=1
 while : ; do
   if [ -n "${NEXT_TOKEN}" ]; then
     RESP="$(aws ssm get-parameters-by-path \
@@ -32,7 +33,7 @@ while : ; do
       --with-decryption \
       --max-items 10 \
       --starting-token "${NEXT_TOKEN}" \
-      --output json)"
+      --output json 2>&1)" || { SSM_OK=0; break; }
   else
     RESP="$(aws ssm get-parameters-by-path \
       --region "${AWS_REGION}" \
@@ -40,7 +41,7 @@ while : ; do
       --recursive \
       --with-decryption \
       --max-items 10 \
-      --output json)"
+      --output json 2>&1)" || { SSM_OK=0; break; }
   fi
 
   printf '%s' "${RESP}" | jq -r '.Parameters[] | "\(.Name)\t\(.Value)"' >> "${TMP_PARAMS}"
@@ -50,6 +51,12 @@ while : ; do
     break
   fi
 done
+
+if [ "${SSM_OK}" -eq 0 ]; then
+  log "SSM fetch failed for prefix '${SSM_PREFIX}' (likely no permission or no params). Continuing without injection."
+  log "  AWS response: ${RESP}"
+  : > "${TMP_PARAMS}"
+fi
 
 INJECTED=0
 while IFS=$'\t' read -r NAME VALUE; do
