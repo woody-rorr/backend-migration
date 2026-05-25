@@ -5,7 +5,7 @@ import {
   getSummaryHandler,
   rewardQuizParticipationHandler,
   processMonthlyRankingRewardHandler,
-} from './spark.handler.js';
+} from './handler.js';
 import { authMiddleware } from '../../middleware/auth.js';
 
 const router = express.Router();
