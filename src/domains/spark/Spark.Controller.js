@@ -1,14 +1,22 @@
-// TODO: porting origin Spark.Controller + Spark.Services (`prompts/api/domains/spark/`)
-// 부팅 안정성을 위해 stub만 동봉. 실제 구현은 다음 PR에서 채워야 함.
+// TODO: porting origin Spark.Controller + Spark.Services
+// (`prompts/api/domains/spark/business-rules.md` 기준)
+// 부팅 안정성을 위해 stub만 동봉. 실제 구현은 후속 PR에서.
 //
-// 응답 포맷: { resultCode, resultMsg, data } — `prompts/api/_shared/response-format.md`.
-// 비즈니스 룰: `prompts/api/domains/spark/business-rules.md`.
+// stub 호출 패턴 호환:
+//   const ret = await Ctrl.fn(...);  ret.getResult() → { resultCode, resultMsg, data }
+//   const ret = Ctrl.fn(...);        ret.getResult() → 동일
+//   await Ctrl.fn(...).getResult();  → 동일
 
-const notImplemented = (fn) => async () => {
-  const err = new Error(`Spark.${fn} not implemented yet`);
-  err.code = 'NOT_IMPLEMENTED';
-  throw err;
-};
+const notImplemented = (fn) => () => ({
+  getResult: () => {
+    const payload = {
+      resultCode: 'NOT_IMPLEMENTED',
+      resultMsg: `Spark.${fn} not implemented yet`,
+      data: null,
+    };
+    return { ...payload, statusCode: 501, body: JSON.stringify(payload) };
+  },
+});
 
 export const SparkCtrl = {
   getProfile: notImplemented('getProfile'),
