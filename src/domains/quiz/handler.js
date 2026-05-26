@@ -1,6 +1,6 @@
 import { formatJSONResponse2 } from '@libs/api-gateway';
 import { loadSecretToCache } from '@configuration/secretLoader';
-import { resultCode } from '@interface/resultCode';
+import { resultCode } from '../../interface/resultCode.js';
 import { QuizCtrl } from '../../functions/quiz/Quiz.Controller.js';
 
 function normalizeQuizId(v) {
