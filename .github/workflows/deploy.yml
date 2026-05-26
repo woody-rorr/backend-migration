@@ -32,19 +32,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 빈 레포 또는 인프라 미준비 상태에서는 빌드/배포 자체를 skip.
+      # LLM 마이그레이션 PR이 setup_nestjs_project.md 기준으로
+      # Dockerfile/package.json 을 채우면 그 이후 본 워크플로우가 정상 동작.
+      - name: Check prerequisites
+        id: check
+        run: |
+          missing=""
+          for f in deploy/Dockerfile deploy/entrypoint.sh package.json; do
+            if [ ! -f "$f" ]; then missing="$missing $f"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Skipping deploy. Missing required files:$missing"
+            echo "::warning::See prompts/setup_nestjs_project.md in backend-migration-mcp."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Configure AWS via OIDC
+        if: steps.check.outputs.ready == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::239460481239:role/github-actions-rorr-mcp
           aws-region: ${{ env.AWS_REGION }}
 
       - name: ECR login
+        if: steps.check.outputs.ready == 'true'
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up Docker Buildx
+        if: steps.check.outputs.ready == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Build & push image
+        if: steps.check.outputs.ready == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -56,6 +78,7 @@ jobs:
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPO }}:${{ github.sha }}
 
       - name: Force new ECS deployment
+        if: steps.check.outputs.ready == 'true'
         run: |
           aws ecs update-service \
             --cluster $CLUSTER \
@@ -65,7 +88,11 @@ jobs:
 
       - name: Done
         run: |
-          echo "✅ Deployment triggered: $ECR_REGISTRY/$ECR_REPO:${{ github.sha }}"
-          echo "Health: http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com:5012/health"
-          echo "API Docs: http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com:5012/api-docs"
-          echo "ℹ️  새 task가 unhealthy하면 ECS가 옛 task로 자동 롤백/유지 — 별도 wait 검증 없음."
+          if [ "${{ steps.check.outputs.ready }}" = "true" ]; then
+            echo "✅ Deployment triggered: $ECR_REGISTRY/$ECR_REPO:${{ github.sha }}"
+            echo "Health: http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com:5012/health"
+            echo "API Docs: http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com:5012/api-docs"
+            echo "ℹ️  새 task가 unhealthy하면 ECS가 옛 task로 자동 유지 — 별도 wait 검증 없음."
+          else
+            echo "⏭️  Skipped (prerequisites missing). Add Dockerfile/package.json via migration PR."
+          fi
