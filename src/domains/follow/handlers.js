@@ -1,5 +1,5 @@
 import { formatJSONResponse2 } from '@libs/api-gateway';
-import { resultCode } from '@interface/resultCode';
+import { resultCode } from '../../interface/resultCode.js';
 import { FollowCtrl } from './Follow.Controller.js';
 
 function sendResult(res, lambdaResponse) {

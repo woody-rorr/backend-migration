@@ -10,7 +10,11 @@ import { errorHandler } from "./middleware/errorHandler.js";
 // Import routers
 import sampleRouter from "./domains/sample/routes.js";
 import sparkRouter from "./domains/spark/routes.js";
-// import quizRouter from "./domains/quiz/routes.js"; // disabled: broken imports
+import authRouter from "./domains/auth/routes.js";
+import followRouter from "./domains/follow/routes.js";
+import rankingRouter from "./domains/ranking/routes.js";
+import usersRouter from "./domains/users/routes.js";
+// import quizRouter from "./domains/quiz/routes.js"; // disabled: path alias 잔재 (@libs/api-gateway 등)
 
 const app = express();
 
@@ -59,7 +63,11 @@ app.get("/db-check", async (_, res, next) => {
 // Mount routers
 app.use("/sample", sampleRouter);
 app.use("/spark", sparkRouter);
-// app.use("/quiz", quizRouter);
+app.use("/auth", authRouter);
+app.use("/follow", followRouter);
+app.use("/ranking", rankingRouter);
+app.use("/users", usersRouter);
+// app.use("/quiz", quizRouter); // disabled: path alias 잔재
 
 app.use(errorHandler);
 
