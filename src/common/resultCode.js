@@ -1,5 +1,7 @@
 export const resultCode = {
-  Success: '0000',
-  error: '9999',
+  Success: 0,
+  error: -1,
+  validationError: 400,
+  FollowNotExists: 404,
 };
 export default resultCode;
