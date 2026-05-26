@@ -1,4 +1,4 @@
-import { resultCode } from '@interface/resultCode';
+import { resultCode } from '../../interface/resultCode.js';
 import { SparkCtrl } from './Spark.Controller.js';
 
 function normalizeQuizParticipationBody(raw) {
