@@ -1,0 +1,20 @@
+{
+  "name": "backend-migration",
+  "version": "0.2.0",
+  "description": "ECS Express API (migrated from Lambda/Serverless)",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "morgan": "^1.10.0",
+    "mysql2": "^3.11.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0",
+    "zod": "^3.23.0"
+  }
+}
