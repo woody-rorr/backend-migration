@@ -9,9 +9,9 @@ export async function getMyFollows(userid, followType) {
       l.name AS league_name, l.slug AS league_slug, l.image_url AS league_image, l.boostYN AS league_boostYN,
       p.first_name, p.last_name, p.nickname, p.slug AS player_slug, p.image_url AS player_image, p.boostYN AS player_boostYN
     FROM follow f
-    LEFT JOIN team t ON f.follow_type = 'team' AND t.id = f.target_id
-    LEFT JOIN league l ON f.follow_type = 'league' AND l.id = f.target_id
-    LEFT JOIN player p ON f.follow_type = 'player' AND p.id = f.target_id
+    LEFT JOIN teams t ON f.follow_type = 'team' AND t.id = f.target_id
+    LEFT JOIN leagues l ON f.follow_type = 'league' AND l.id = f.target_id
+    LEFT JOIN players p ON f.follow_type = 'player' AND p.id = f.target_id
     WHERE f.userid = ?`;
   const params = [userid];
   if (followType) {
