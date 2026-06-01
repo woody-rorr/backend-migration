@@ -11,6 +11,7 @@ import usersRouter from "./domains/users/routes.js";
 import authRouter from "./domains/auth/routes.js";
 import sparkRouter from "./domains/spark/routes.js";
 import followRouter from "./domains/follow/routes.js";
+import rankingRouter from "./domains/ranking/routes.js";
 
 const app = express();
 
@@ -57,6 +58,7 @@ app.use("/users", usersRouter);
 app.use("/auth", authRouter);
 app.use("/spark", sparkRouter);
 app.use("/follow", followRouter);
+app.use("/ranking", rankingRouter);
 
 app.use(errorHandler);
 
