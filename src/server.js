@@ -7,16 +7,8 @@ import { env } from "./config/env.js";
 import { pool } from "./config/db.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
-// =====================================================================
-// 도메인 라우터는 의도적으로 비어있습니다.
-// `backend-migration-mcp`의 prompts/api/domains/<domain>/*.md 명세를
-// 기준으로 LLM 마이그레이션 PR이 추가하면서 다음 두 줄을 함께 넣어야 합니다.
-//
-//   import <d>Router from "./domains/<d>/routes.js";
-//   app.use("/<d>", <d>Router);
-//
-// (prompts/convert_handler.md § server.js 일치성 참조)
-// =====================================================================
+import usersRouter from "./domains/users/routes.js";
+import authRouter from "./domains/auth/routes.js";
 
 const app = express();
 
@@ -32,6 +24,11 @@ const swaggerOptions = {
       { url: `http://localhost:${env.PORT || 5012}`, description: "Development" },
       { url: "http://mcp-agents-staging-alb-249976027.us-east-1.elb.amazonaws.com:5012", description: "Staging ALB" },
     ],
+    components: {
+      securitySchemes: {
+        bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+      },
+    },
   },
   apis: ["./src/domains/*/routes.js"],
 };
@@ -53,6 +50,9 @@ app.get("/db-check", async (_, res, next) => {
     res.json({ db: "ok", result: rows[0] });
   } catch (e) { next(e); }
 });
+
+app.use("/users", usersRouter);
+app.use("/auth", authRouter);
 
 app.use(errorHandler);
 
